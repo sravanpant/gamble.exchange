@@ -22,11 +22,11 @@ export function Leaderboard() {
       { rank: 1, username: 'WhaleKing', wagered: 125000, profit: 45000 },
       { rank: 2, username: 'LuckyAce', wagered: 98000, profit: 32000 },
       { rank: 3, username: 'DiamondHands', wagered: 87000, profit: 28000 },
-      { rank: 4, username: 'CryptoShark', wagered: 76000, profit: 19000 },
-      { rank: 5, username: 'MoonBet', wagered: 65000, profit: 15000 },
-      { rank: 6, username: 'RollerHigh', wagered: 54000, profit: 12000 },
-      { rank: 7, username: 'GoldRush', wagered: 43000, profit: 9000 },
-      { rank: 8, username: 'BetMaster', wagered: 32000, profit: 7000 },
+      // { rank: 4, username: 'CryptoShark', wagered: 76000, profit: 19000 },
+      // { rank: 5, username: 'MoonBet', wagered: 65000, profit: 15000 },
+      // { rank: 6, username: 'RollerHigh', wagered: 54000, profit: 12000 },
+      // { rank: 7, username: 'GoldRush', wagered: 43000, profit: 9000 },
+      // { rank: 8, username: 'BetMaster', wagered: 32000, profit: 7000 },
     ]);
   }, [timeframe]);
 
@@ -70,8 +70,8 @@ export function Leaderboard() {
             key={period}
             onClick={() => setTimeframe(period)}
             className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${timeframe === period
-                ? 'bg-gradient-to-r from-[#00D4FF] to-[#9D00FF] text-white'
-                : 'bg-[#1A1A2E] text-gray-400 hover:text-white hover:bg-[#1A1A2E]/80'
+              ? 'bg-gradient-to-r from-[#00D4FF] to-[#9D00FF] text-white'
+              : 'bg-[#1A1A2E] text-gray-400 hover:text-white hover:bg-[#1A1A2E]/80'
               }`}
           >
             {period.charAt(0).toUpperCase() + period.slice(1)}
@@ -88,8 +88,8 @@ export function Leaderboard() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
             className={`group relative overflow-hidden rounded-lg transition-all ${entry.rank <= 3
-                ? 'bg-gradient-to-r from-[#252547] to-[#1A1A2E] border border-[#00D4FF]/30 hover:border-[#00D4FF]/50'
-                : 'bg-[#1A1A2E] hover:bg-[#252547]'
+              ? 'bg-gradient-to-r from-[#252547] to-[#1A1A2E] border border-[#00D4FF]/30 hover:border-[#00D4FF]/50'
+              : 'bg-[#1A1A2E] hover:bg-[#252547]'
               }`}
           >
             {/* Background glow for top 3 */}

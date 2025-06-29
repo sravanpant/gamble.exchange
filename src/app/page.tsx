@@ -1,3 +1,4 @@
+// app/page.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -7,7 +8,7 @@ import { Header } from "@/components/layout/header";
 import { HeroCarousel } from "@/components/home/hero-carousel";
 import { Leaderboard } from "@/components/home/leaderboard";
 import { GameCards } from "@/components/home/game-cards";
-import { PromotionBanner } from "@/components/home/promotion-banner";
+// import { PromotionBanner } from "@/components/home/promotion-banner";
 import { StatsSection } from "@/components/home/stats-section";
 import { FeaturesSection } from "@/components/home/features-section";
 import { LiveBetsTicker } from "@/components/home/live-bets-ticker";
@@ -25,11 +26,9 @@ export default function HomePage() {
   const musicRef = useRef<BackgroundMusicHandle>(null);
 
   useEffect(() => {
-    // Check if user entered recently (within 3 minutes)
     const recentEntry = checkRecentEntry();
 
     if (recentEntry) {
-      // Skip the gate if entered recently
       setShowGate(false);
     }
 
@@ -53,15 +52,12 @@ export default function HomePage() {
 
   return (
     <>
-      {/* Background Music */}
       <BackgroundMusic ref={musicRef} />
 
-      {/* Show gate only if not recently entered */}
       {showGate && !checkRecentEntry() && (
         <WoodenGate onEnter={handleEnterCasino} />
       )}
 
-      {/* Show casino content if gate is not shown or user has entered */}
       {(!showGate || hasEnteredCasino) && (
         <>
           <Header />
@@ -70,23 +66,23 @@ export default function HomePage() {
             <section className="relative animate-staggerFadeIn">
               <HeroCarousel />
             </section>
-
             {/* Live Bets Ticker */}
             <section className="animate-staggerFadeIn">
               <LiveBetsTicker />
             </section>
 
-            {/* Games and Leaderboard Section */}
+            {/* Main Content Section - Games, Spinner, and Leaderboard */}
             <section className="max-w-7xl mx-auto px-4 py-8 animate-staggerFadeIn">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-                {/* Games Section - Left Side */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Games Section - Takes 3/4 of space (9 columns) */}
                 <div className="lg:col-span-8">
-                  <SpinnerRoulette />
                   <GameCards />
                 </div>
 
-                {/* Right Side - Spinner and Leaderboard */}
+                {/* Right Side - Spinner and Leaderboard (3 columns) */}
                 <div className="lg:col-span-4 space-y-6">
+                  {/* Spinner */}
+                  <SpinnerRoulette />
 
                   {/* Leaderboard */}
                   <Leaderboard />
@@ -111,7 +107,7 @@ export default function HomePage() {
             <Footer />
 
             {/* Promotion Banner (Fixed Position) */}
-            <PromotionBanner />
+            {/* <PromotionBanner /> */}
           </div>
         </>
       )}
