@@ -83,17 +83,27 @@ export const useCasinoStore = create<CasinoState>()(
           walletAddress: user.walletAddress,
           points: user.points,
         }),
-      setPoints: (points) => set({ points }),
+      setPoints: (points) => {
+        const user = get().user;
+        if (user) {
+          set({
+            points,
+            user: { ...user, points },
+          });
+        } else {
+          set({ points });
+        }
+      },
       updatePoints: async (operation, amount) => {
-        const { walletAddress } = get();
-        if (!walletAddress) return;
+        const state = get();
+        if (!state.walletAddress) return;
 
         try {
           const response = await fetch("/api/user/points", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              walletAddress,
+              walletAddress: state.walletAddress,
               points: amount,
               operation,
             }),
@@ -101,7 +111,13 @@ export const useCasinoStore = create<CasinoState>()(
 
           if (response.ok) {
             const data = await response.json();
-            set({ points: data.points });
+            // Update both top-level points and user points
+            set({
+              points: data.points,
+              user: state.user
+                ? { ...state.user, points: data.points }
+                : state.user,
+            });
           }
         } catch (error) {
           console.error("Failed to update points:", error);
