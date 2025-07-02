@@ -118,9 +118,9 @@ export function Header() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const formatPoints = (pts: number) => {
-    return pts.toLocaleString();
-  };
+  function formatPoints(points: number | null | undefined) {
+    return points?.toLocaleString();
+  }
 
   return (
     <>
