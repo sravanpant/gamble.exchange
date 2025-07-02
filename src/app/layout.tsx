@@ -1,9 +1,11 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
-import BackgroundMusic from "@/components/home/background-music";
+import { LayoutWrapper } from "@/components/layout/layout-wrapper";
+import { GlobalLoading } from "@/components/layout/global-loading";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,15 +27,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-casino-background text-casino-text min-h-screen`}
-        suppressHydrationWarning >
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-gray-900 via-purple-900/10 to-gray-900 text-white min-h-screen`}
+        suppressHydrationWarning
+      >
         <Providers>
-          <BackgroundMusic />
-          {children}
+          <GlobalLoading />
+          <LayoutWrapper>{children}</LayoutWrapper>
           <Toaster position="top-center" richColors />
         </Providers>
       </body>
