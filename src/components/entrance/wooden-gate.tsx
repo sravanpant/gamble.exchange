@@ -1,15 +1,38 @@
+// src/components/entrance/wooden-gate.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface WoodenGateProps {
   onEnter: () => void;
 }
 
+interface Particle {
+  id: number;
+  color: string;
+  left: string;
+  top: string;
+  xOffset: number;
+}
+
 export function WoodenGate({ onEnter }: WoodenGateProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const [particles, setParticles] = useState<Particle[]>([]);
+
+  // Generate particles only on client side
+  useEffect(() => {
+    const colors = ['#FFD700', '#00D4FF', '#9D00FF', '#FF1493'];
+    const newParticles = Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      color: colors[i % 4],
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      xOffset: Math.random() * 20 - 10,
+    }));
+    setParticles(newParticles);
+  }, []);
 
   const handleEnter = () => {
     // Start door opening animation
@@ -55,27 +78,27 @@ export function WoodenGate({ onEnter }: WoodenGateProps) {
                 filter: 'blur(100px)',
               }}
             />
-            
-            {/* Animated particles */}
+
+            {/* Animated particles - only render after hydration */}
             <div className="absolute inset-0">
-              {[...Array(20)].map((_, i) => (
+              {particles.map((particle) => (
                 <motion.div
-                  key={i}
+                  key={particle.id}
                   className="absolute w-2 h-2 rounded-full"
                   style={{
-                    background: ['#FFD700', '#00D4FF', '#9D00FF', '#FF1493'][i % 4],
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
+                    background: particle.color,
+                    left: particle.left,
+                    top: particle.top,
                   }}
                   animate={{
                     y: [0, -30, 0],
-                    x: [0, Math.random() * 20 - 10, 0],
+                    x: [0, particle.xOffset, 0],
                     opacity: [0, 1, 0],
                   }}
                   transition={{
                     duration: 3,
                     repeat: Infinity,
-                    delay: i * 0.1,
+                    delay: particle.id * 0.1,
                     ease: "easeInOut",
                   }}
                 />
