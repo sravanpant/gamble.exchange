@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Gamepad2, TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -17,21 +17,7 @@ interface LiveBet {
 export function LiveBetsTicker() {
   const [bets, setBets] = useState<LiveBet[]>([]);
 
-  useEffect(() => {
-    // Generate initial bets
-    const initialBets = generateMockBets(10);
-    setBets(initialBets);
-
-    // Add new bet every 2-5 seconds
-    const interval = setInterval(() => {
-      const newBet = generateMockBet();
-      setBets(prev => [newBet, ...prev].slice(0, 20));
-    }, Math.random() * 3000 + 2000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  function generateMockBet(): LiveBet {
+  const generateMockBet = (): LiveBet => {
     const games = ['Crash', 'Dice', 'Slots', 'Roulette', 'Blackjack'];
     const bet = Math.floor(Math.random() * 1000) + 10;
     const isWin = Math.random() > 0.5;
@@ -46,11 +32,25 @@ export function LiveBetsTicker() {
       win: parseFloat((bet * multiplier).toFixed(2)),
       type: isWin ? 'win' : 'loss',
     };
-  }
+  };
 
-  function generateMockBets(count: number): LiveBet[] {
+  const generateMockBets = useCallback((count: number): LiveBet[] => {
     return Array.from({ length: count }, generateMockBet);
-  }
+  }, []);
+
+  useEffect(() => {
+    // Generate initial bets
+    const initialBets = generateMockBets(10);
+    setBets(initialBets);
+
+    // Add new bet every 2-5 seconds
+    const interval = setInterval(() => {
+      const newBet = generateMockBet();
+      setBets(prev => [newBet, ...prev].slice(0, 20));
+    }, Math.random() * 3000 + 2000);
+
+    return () => clearInterval(interval);
+  }, [generateMockBets]);
 
   return (
     <div className="w-full overflow-hidden py-3 sm:py-4" style={{ backgroundColor: '#0F0F1E' }}>
