@@ -25,7 +25,7 @@ export function SpinnerRoulette() {
   const [rotation, setRotation] = useState(0);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [spinResult, setSpinResult] = useState<{ won: boolean; amount: number }>({ won: false, amount: 0 });
-  const { walletAddress, points, updatePoints } = useUserStore();
+  const { walletAddress, points, setPoints } = useUserStore();
 
   const handleSpin = async () => {
     if (!walletAddress) {
@@ -82,34 +82,50 @@ export function SpinnerRoulette() {
     // Handle points deduction in the background
     const processTransaction = async () => {
       try {
-        // Deduct spin cost
-        await updatePoints('subtract', SPIN_COST);
+        // Call the roulette API to process the spin
+        const response = await fetch('/api/games/roulette/spin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: walletAddress,
+            prizeValue: prizeValue,
+          }),
+        });
 
-        // Wait for spin animation to complete
-        setTimeout(async () => {
-          setIsSpinning(false);
+        const data = await response.json();
 
-          // Normalize the rotation to prevent huge rotation values
-          // This keeps the rotation value between 0-360 degrees
-          const normalizedRotation = finalRotation % 360;
-          setRotation(normalizedRotation);
+        if (response.ok) {
+          // Update points in the store
+          setPoints(data.userPoints);
 
-          if (prizeValue > 0) {
-            await updatePoints('add', prizeValue);
+          // Wait for spin animation to complete
+          setTimeout(() => {
+            setIsSpinning(false);
 
-            if (prizeValue >= 100) {
-              confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-              });
+            // Normalize the rotation to prevent huge rotation values
+            // This keeps the rotation value between 0-360 degrees
+            const normalizedRotation = finalRotation % 360;
+            setRotation(normalizedRotation);
+
+            if (prizeValue > 0) {
+              if (prizeValue >= 100) {
+                confetti({
+                  particleCount: 100,
+                  spread: 70,
+                  origin: { y: 0.6 }
+                });
+              }
             }
-          }
 
-          // Set the result and show dialog
-          setSpinResult({ won: prizeValue > 0, amount: prizeValue });
-          setShowResultDialog(true);
-        }, 4000);
+            // Set the result and show dialog
+            setSpinResult({ won: prizeValue > 0, amount: prizeValue });
+            setShowResultDialog(true);
+          }, 4000);
+        } else {
+          // If API call fails, stop spinning
+          setIsSpinning(false);
+          toast.error(data.error || "Failed to process spin. Please try again.");
+        }
       } catch {
         // If something goes wrong, stop spinning
         setIsSpinning(false);
