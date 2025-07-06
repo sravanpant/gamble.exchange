@@ -1,5 +1,5 @@
 // This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// learn more about it in the docs: https://pris.lyd/d/prisma-schema
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
@@ -16,23 +16,30 @@ datasource db {
 }
 
 model User {
-  id            String    @id // This will be the wallet address
-  walletAddress String    @unique
-  points        Int       @default(1000)
-  isFirstLogin  Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLoginAt   DateTime?
+  id               String    @id @map("wallet_address") // Using wallet address as the primary ID
+  walletAddress    String    @unique @map("wallet_address_lower") // Storing it again for consistency, perhaps lowercased and indexed
+  points           Int       @default(1000) // Your existing points system for casino games
+  cryptoBalance    Decimal   @default(0.0) @db.Decimal(18, 6) // New: For crypto trading (e.g., USDC)
+  isFirstLogin     Boolean   @default(true)
+  isAdmin          Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  lastLoginAt      DateTime?
 
-  minesGames MinesGame[]
+  minesGames    MinesGame[]
+  createdEvents Event[]     @relation("CreatedEvents") // Events created by this user
+  trades        Trade[]
+  holdings      Holding[]
+  transactions  Transaction[] // All point and crypto transactions
 
-  @@index([walletAddress])
+  @@index([walletAddress]) // Ensure walletAddress is indexed for fast lookups
+  @@map("users") // Explicitly map to 'users' table
 }
 
 model MinesGame {
   id                String   @id @default(cuid())
-  userId            String // Changed to required
-  betAmount         Int // Changed to required (removed ?)
+  userId            String // Foreign key to User.id (which is walletAddress)
+  betAmount         Int
   currentMultiplier Float    @default(1.0)
   cashOutMultiplier Float?
   autoCashOut       Float?
@@ -46,4 +53,125 @@ model MinesGame {
   updatedAt         DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])
+
+  @@map("mines_games")
+}
+
+// --- Opinion Trading Models ---
+
+model Event {
+  id                  String    @id @default(cuid())
+  title               String
+  description         String?
+  outcomeType         String    @default("Boolean") // e.g., "Boolean", "Numeric"
+  eventDateTime       DateTime  // When the real-world event is expected to conclude
+  settlementDateTime  DateTime? // When the market will be officially settled (after eventDateTime)
+  status              EventStatus @default(OPEN)
+  creatorId           String    @map("creator_user_id") // Foreign Key to User.id (walletAddress)
+  creator             User      @relation("CreatedEvents", fields: [creatorId], references: [id])
+  totalYesShares      Decimal   @default(0.0) @db.Decimal(18, 6) // Shares are bought with crypto, so use Decimal
+  totalNoShares       Decimal   @default(0.0) @db.Decimal(18, 6)
+  currentYesPrice     Float     @default(0.5) // Prices as Float (0 to 1)
+  currentNoPrice      Float     @default(0.5)
+  winningOutcomeName  String?   // "Yes" or "No" after settlement
+  outcomes            Outcome[]
+  trades              Trade[]
+  holdings            Holding[]
+
+  @@map("events")
+}
+
+model Outcome {
+  id              String    @id @default(cuid())
+  eventId         String
+  event           Event     @relation(fields: [eventId], references: [id])
+  name            String    // "Yes", "No", "Team A Wins", "Price > X"
+  description     String?
+  isWinning       Boolean   @default(false)
+  sharesOwned     Decimal   @default(0.0) @db.Decimal(18, 6) // Total shares for this outcome
+  trades          Trade[]
+  holdings        Holding[]
+
+  @@unique([eventId, name]) // An event can't have duplicate outcome names
+  @@map("outcomes")
+}
+
+model Trade {
+  id             String    @id @default(cuid())
+  userId         String // Foreign key to User.id (walletAddress)
+  user           User      @relation(fields: [userId], references: [id])
+  eventId        String
+  event          Event     @relation(fields: [eventId], references: [id])
+  outcomeId      String
+  outcome        Outcome   @relation(fields: [outcomeId], references: [id])
+  tradeType      TradeType // "BUY", "SELL"
+  shareQuantity  Decimal   @db.Decimal(18, 6) // Quantity of shares traded
+  pricePerShare  Float     // The price at which the trade occurred
+  totalCryptoAmount Decimal @db.Decimal(18, 6) // total amount in crypto for the trade
+  tradeDateTime  DateTime  @default(now())
+  status         TradeStatus @default(COMPLETED)
+
+  @@map("trades")
+  Transaction Transaction[]
+}
+
+model Holding {
+  userId          String // Foreign key to User.id (walletAddress)
+  user            User      @relation(fields: [userId], references: [id])
+  eventId         String
+  event           Event     @relation(fields: [eventId], references: [id])
+  outcomeId       String
+  outcome         Outcome   @relation(fields: [outcomeId], references: [id])
+  sharesHeld      Decimal   @default(0.0) @db.Decimal(18, 6)
+  averageCost     Float     @default(0.0) // Weighted average cost of shares
+
+  @@id([userId, eventId, outcomeId]) // Composite primary key
+  @@map("holdings")
+}
+
+model Transaction {
+  id          String         @id @default(cuid())
+  userId      String // Foreign key to User.id (walletAddress)
+  user        User           @relation(fields: [userId], references: [id])
+  type        TransactionType
+  amount      Decimal        @db.Decimal(18, 6) // Use Decimal for crypto amounts
+  currency    String         // "POINTS", "USDC", "ETH", etc.
+  timestamp   DateTime       @default(now())
+  description String?
+  relatedTradeId String?
+  relatedTrade Trade? @relation(fields: [relatedTradeId], references: [id])
+
+  @@map("transactions")
+}
+
+enum EventStatus {
+  OPEN
+  TRADING_CLOSED
+  SETTLING
+  SETTLED
+  CANCELLED
+}
+
+enum TradeType {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  COMPLETED
+  PENDING
+  FAILED
+}
+
+enum TransactionType {
+  POINTS_DEPOSIT
+  POINTS_WITHDRAWAL
+  MINES_BET
+  MINES_WIN
+  CRYPTO_DEPOSIT      // User sending crypto to platform's wallet/smart contract
+  CRYPTO_WITHDRAWAL   // User requesting crypto from platform's wallet/smart contract
+  TRADE_BUY
+  TRADE_SELL
+  REWARD
+  FEE
 }
