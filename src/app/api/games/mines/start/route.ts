@@ -1,24 +1,33 @@
 // src/app/api/games/mines/start/route.ts
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { TransactionType } from "@/generated/prisma";
 
 function generateMinePositions(count: number, gridSize: number): number[] {
   const positions = new Set<number>();
-  
+
   while (positions.size < count) {
     positions.add(Math.floor(Math.random() * gridSize));
   }
-  
+
   return Array.from(positions);
 }
 
 export async function POST(request: Request) {
   try {
-    const { minesCount = 5, betAmount, autoCashOut, userId } = await request.json();
+    const {
+      minesCount = 5,
+      betAmount,
+      autoCashOut,
+      userId,
+    } = await request.json();
 
     // Validate input
     if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      );
     }
 
     // Check user balance
@@ -31,12 +40,15 @@ export async function POST(request: Request) {
     }
 
     if (user.points < betAmount) {
-      return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Insufficient balance" },
+        { status: 400 }
+      );
     }
 
     if (!betAmount || betAmount < 10 || betAmount > 10000) {
       return NextResponse.json(
-        { error: "Invalid bet amount" }, 
+        { error: "Invalid bet amount" },
         { status: 400 }
       );
     }
@@ -50,7 +62,7 @@ export async function POST(request: Request) {
       // Create game
       prisma.minesGame.create({
         data: {
-          userId: user.id,  // Use user.id from database
+          userId: user.id, // Use user.id from database
           betAmount: betAmount,
           autoCashOut,
           minesCount,
@@ -67,6 +79,16 @@ export async function POST(request: Request) {
           points: {
             decrement: betAmount,
           },
+        },
+      }),
+      // Log transaction for bet
+      prisma.transaction.create({
+        data: {
+          userId: user.id,
+          type: TransactionType.MINES_BET,
+          amount: -betAmount, // Negative amount for bet
+          currency: "POINTS",
+          description: `Mines game bet: ${betAmount} points`,
         },
       }),
     ]);
