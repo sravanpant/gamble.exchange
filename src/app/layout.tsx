@@ -1,10 +1,10 @@
-// app/layout.tsx
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
-import { LayoutWrapper } from "@/components/layout/layout-wrapper";
+import { ConditionalLayoutWrapper } from "@/components/layout/conditional-layout-wrapper";
 import { GlobalLoading } from "@/components/layout/global-loading";
 
 const geistSans = Geist({
@@ -35,7 +35,7 @@ export default function RootLayout({
       >
         <Providers>
           <GlobalLoading />
-          <LayoutWrapper>{children}</LayoutWrapper>
+          <ConditionalLayoutWrapper>{children}</ConditionalLayoutWrapper>
           <Toaster position="top-center" richColors />
         </Providers>
       </body>

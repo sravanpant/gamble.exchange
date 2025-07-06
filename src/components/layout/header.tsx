@@ -20,7 +20,8 @@ import {
   User,
   ChevronDown,
   Copy,
-  ExternalLink
+  ExternalLink,
+  History
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,7 +61,9 @@ export function Header() {
           setUser({
             id: data.user.id,
             walletAddress: data.user.walletAddress,
-            points: data.user.points
+            points: data.user.points,
+            cryptoBalance: data.user.cryptoBalance,
+            isAdmin: data.user.isAdmin
           });
           setPoints(data.user.points);
 
@@ -163,11 +166,11 @@ export function Header() {
                   Promotions
                 </Link>
                 <Link
-                  href="/vip"
+                  href="/opinion-trading"
                   className="transition-colors hover:text-[#00D4FF]"
                   style={{ color: "rgba(255, 255, 255, 0.8)" }}
                 >
-                  VIP Club
+                  Opinion Trading
                 </Link>
               </nav>
             </div>
@@ -245,6 +248,16 @@ export function Header() {
                       >
                         <User className="w-4 h-4 mr-3" />
                         <span>Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/transactions"
+                        className="cursor-pointer hover:bg-white/5 focus:bg-white/5"
+                      >
+                        <History className="w-4 h-4 mr-3" />
+                        <span>Transaction History</span>
                       </Link>
                     </DropdownMenuItem>
 
@@ -413,6 +426,16 @@ export function Header() {
                   >
                     <User className="w-4 h-4 mr-3" />
                     Profile
+                  </Link>
+
+                  <Link
+                    href="/transactions"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-4 py-3 rounded-lg transition-colors hover:bg-[#252547]"
+                    style={{ color: "rgba(255, 255, 255, 0.8)" }}
+                  >
+                    <History className="w-4 h-4 mr-3" />
+                    Transaction History
                   </Link>
 
                   <Link
