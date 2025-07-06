@@ -1,6 +1,7 @@
 // app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { TransactionType } from "@/generated/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,15 +23,27 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       // Create new user with 1000 points bonus
-      user = await prisma.user.create({
-        data: {
-          id: walletAddress.toLowerCase(),
-          walletAddress: walletAddress.toLowerCase(),
-          points: 1000,
-          isFirstLogin: false,
-          lastLoginAt: new Date(),
-        },
-      });
+      const [newUser] = await prisma.$transaction([
+        prisma.user.create({
+          data: {
+            id: walletAddress.toLowerCase(),
+            walletAddress: walletAddress.toLowerCase(),
+            points: 1000,
+            isFirstLogin: false,
+            lastLoginAt: new Date(),
+          },
+        }),
+        prisma.transaction.create({
+          data: {
+            userId: walletAddress.toLowerCase(),
+            type: TransactionType.REWARD,
+            amount: 1000,
+            currency: "POINTS",
+            description: "Welcome bonus: 1000 points",
+          },
+        }),
+      ]);
+      user = newUser;
       isNewUser = true;
     } else {
       // Update existing user
