@@ -6,6 +6,8 @@ interface User {
   id: string;
   walletAddress: string;
   points: number;
+  cryptoBalance: string; // Store as string to handle Decimal from Prisma
+  isAdmin: boolean;
 }
 
 interface CasinoState {
@@ -18,6 +20,7 @@ interface CasinoState {
   user: User | null;
   walletAddress: string | null;
   points: number;
+  cryptoBalance: string; // Added for crypto balance
 
   // Casino actions
   setHasEnteredCasino: (value: boolean) => void;
@@ -32,6 +35,12 @@ interface CasinoState {
   updatePoints: (
     operation: "add" | "subtract" | "set",
     amount: number
+  ) => Promise<void>;
+  // New action for crypto balance
+  setCryptoBalance: (balance: string) => void;
+  updateCryptoBalance: (
+    operation: "add" | "subtract" | "set",
+    amount: number // Use number for amount passed from UI, convert to Decimal on backend
   ) => Promise<void>;
   clearUser: () => void;
 
@@ -52,6 +61,7 @@ export const useCasinoStore = create<CasinoState>()(
       user: null,
       walletAddress: null,
       points: 0,
+      cryptoBalance: '0.0', // Initialize crypto balance
 
       // Casino actions
       setHasEnteredCasino: (value) => set({ hasEnteredCasino: value }),
@@ -82,6 +92,7 @@ export const useCasinoStore = create<CasinoState>()(
           user,
           walletAddress: user.walletAddress,
           points: user.points,
+          cryptoBalance: user.cryptoBalance, // Set crypto balance
         }),
       setPoints: (points) => {
         const user = get().user;
@@ -131,6 +142,51 @@ export const useCasinoStore = create<CasinoState>()(
         }),
       shouldPlayMusic: false,
       setShouldPlayMusic: (value) => set({ shouldPlayMusic: value }),
+      // New: Set crypto balance directly
+      setCryptoBalance: (balance) => {
+        const user = get().user;
+        if (user) {
+          set({
+            cryptoBalance: balance,
+            user: { ...user, cryptoBalance: balance },
+          });
+        } else {
+          set({ cryptoBalance: balance });
+        }
+      },
+      // New: Update crypto balance via API
+      updateCryptoBalance: async (operation, amount) => {
+        const state = get();
+        if (!state.walletAddress) return;
+
+        try {
+          const response = await fetch("/api/user/crypto-balance", { // New API endpoint
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              walletAddress: state.walletAddress,
+              amount: amount,
+              operation,
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            // Update both top-level cryptoBalance and user's cryptoBalance
+            set({
+              cryptoBalance: data.cryptoBalance,
+              user: state.user
+                ? { ...state.user, cryptoBalance: data.cryptoBalance }
+                : state.user,
+            });
+          } else {
+            console.error("Failed to update crypto balance:", response.statusText);
+            // Optionally, throw an error or show a user-friendly message
+          }
+        } catch (error) {
+          console.error("Failed to update crypto balance:", error);
+        }
+      },
     }),
     {
       name: "casino-storage",
@@ -140,6 +196,7 @@ export const useCasinoStore = create<CasinoState>()(
         user: state.user,
         walletAddress: state.walletAddress,
         points: state.points,
+        cryptoBalance: state.cryptoBalance,
       }),
     }
   )
@@ -152,9 +209,13 @@ export const useUserStore = () => {
     user: store.user,
     walletAddress: store.walletAddress,
     points: store.points,
+    cryptoBalance: store.cryptoBalance,
     setUser: store.setUser,
+    isAdmin: store.user?.isAdmin || false, 
     setPoints: store.setPoints,
     updatePoints: store.updatePoints,
+    setCryptoBalance: store.setCryptoBalance,
+    updateCryptoBalance: store.updateCryptoBalance,
     clearUser: store.clearUser,
   };
 };
